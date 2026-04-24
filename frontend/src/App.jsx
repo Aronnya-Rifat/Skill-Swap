@@ -57,13 +57,42 @@ function App() {
     SkillID: "",
   });
 
+  const normalizeUser = (user) => {
+    if (!user) return null;
+
+    return {
+      UserID: user.UserID ?? user.userid,
+      FirstName: user.FirstName ?? user.firstname,
+      LastName: user.LastName ?? user.lastname,
+      Email: user.Email ?? user.email,
+      Bio: user.Bio ?? user.bio,
+      TradeTokens: user.TradeTokens ?? user.tradetokens ?? 0,
+    };
+  };
+
+  const normalizeSkill = (skill) => {
+    if (!skill) return null;
+
+    return {
+      SkillID: skill.SkillID ?? skill.skillid,
+      SkillName: skill.SkillName ?? skill.skillname,
+      Category: skill.Category ?? skill.category,
+    };
+  };
+
+  const getCurrentUserId = () => {
+    return currentUser?.UserID ?? currentUser?.userid;
+  };
+
   useEffect(() => {
     loadPublicData();
   }, []);
 
   useEffect(() => {
-    if (currentUser) {
-      loadDashboardData(currentUser.UserID);
+    const userId = getCurrentUserId();
+
+    if (userId) {
+      loadDashboardData(userId);
     }
   }, [currentUser]);
 
@@ -72,14 +101,19 @@ function App() {
       const usersData = await getUsers();
       const skillsData = await getSkills();
 
-      setUsers(usersData);
-      setSkills(skillsData);
+      const normalizedUsers = usersData.map(normalizeUser);
+      const normalizedSkills = skillsData.map(normalizeSkill);
+
+      setUsers(normalizedUsers);
+      setSkills(normalizedSkills);
 
       const offersMap = {};
 
-      for (const user of usersData) {
-        const offers = await getUserOffers(user.UserID);
-        offersMap[user.UserID] = offers;
+      for (const user of normalizedUsers) {
+        if (user.UserID) {
+          const offers = await getUserOffers(user.UserID);
+          offersMap[user.UserID] = offers;
+        }
       }
 
       setAllUserOffers(offersMap);
@@ -89,6 +123,11 @@ function App() {
   };
 
   const loadDashboardData = async (userId) => {
+    if (!userId) {
+      alert("User ID missing. Please log in again.");
+      return;
+    }
+
     try {
       const offers = await getUserOffers(userId);
       const wants = await getUserWants(userId);
@@ -105,7 +144,7 @@ function App() {
   };
 
   const getUserName = (userId) => {
-    const user = users.find((u) => u.UserID === userId);
+    const user = users.find((u) => Number(u.UserID) === Number(userId));
 
     if (!user) {
       return `User #${userId}`;
@@ -115,7 +154,7 @@ function App() {
   };
 
   const getSkillName = (skillId) => {
-    const skill = skills.find((s) => s.SkillID === skillId);
+    const skill = skills.find((s) => Number(s.SkillID) === Number(skillId));
 
     if (!skill) {
       return `Skill #${skillId}`;
@@ -129,8 +168,16 @@ function App() {
 
     try {
       const result = await loginUser(loginForm);
+      const normalizedUser = normalizeUser(result.user);
 
-      setCurrentUser(result.user);
+      if (!normalizedUser || !normalizedUser.UserID) {
+        alert("Login worked, but user ID was missing from backend response.");
+        console.log("Login response:", result);
+        return;
+      }
+
+      setCurrentUser(normalizedUser);
+
       setLoginForm({
         Email: "",
         PasswordHash: "",
@@ -184,12 +231,15 @@ function App() {
   const handleAddOffer = async (e) => {
     e.preventDefault();
 
-    if (!currentUser) {
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+      alert("Please login again. User ID missing.");
       return;
     }
 
     try {
-      await addUserOffer(currentUser.UserID, {
+      await addUserOffer(userId, {
         SkillID: Number(offerForm.SkillID),
         ProficiencyLevel: offerForm.ProficiencyLevel,
       });
@@ -201,7 +251,7 @@ function App() {
         ProficiencyLevel: "Beginner",
       });
 
-      loadDashboardData(currentUser.UserID);
+      loadDashboardData(userId);
       loadPublicData();
     } catch (error) {
       alert("Could not add offered skill: " + error.message);
@@ -211,12 +261,15 @@ function App() {
   const handleAddWant = async (e) => {
     e.preventDefault();
 
-    if (!currentUser) {
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+      alert("Please login again. User ID missing.");
       return;
     }
 
     try {
-      await addUserWant(currentUser.UserID, {
+      await addUserWant(userId, {
         SkillID: Number(wantForm.SkillID),
       });
 
@@ -226,14 +279,17 @@ function App() {
         SkillID: "",
       });
 
-      loadDashboardData(currentUser.UserID);
+      loadDashboardData(userId);
     } catch (error) {
       alert("Could not add wanted skill: " + error.message);
     }
   };
 
   const handleSendSwap = async (receiverId, wantedSkillId) => {
-    if (!currentUser) {
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+      alert("Please login again. User ID missing.");
       return;
     }
 
@@ -244,7 +300,7 @@ function App() {
 
     try {
       await createSwapRequest({
-        SenderID: currentUser.UserID,
+        SenderID: userId,
         ReceiverID: receiverId,
         WantedSkillID: wantedSkillId,
         OfferedSkillID: myOffers[0].SkillID,
@@ -253,25 +309,39 @@ function App() {
 
       alert("Swap request sent.");
 
-      loadDashboardData(currentUser.UserID);
+      loadDashboardData(userId);
     } catch (error) {
       alert("Could not send swap request: " + error.message);
     }
   };
 
   const handleStatusUpdate = async (requestId, status) => {
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+      alert("Please login again. User ID missing.");
+      return;
+    }
+
     try {
       await updateSwapStatus(requestId, status);
 
       alert(`Request marked as ${status}.`);
 
-      loadDashboardData(currentUser.UserID);
+      loadDashboardData(userId);
     } catch (error) {
       alert("Could not update request: " + error.message);
     }
   };
 
   const handleLeaveReview = async (request) => {
+    const userId = getCurrentUserId();
+
+    if (!userId) {
+      alert("Please login again. User ID missing.");
+      return;
+    }
+
     const rating = prompt("Enter rating from 1 to 5:");
 
     if (!rating || Number(rating) < 1 || Number(rating) > 5) {
@@ -282,14 +352,14 @@ function App() {
     const comment = prompt("Write a short review:");
 
     const revieweeId =
-      request.SenderID === currentUser.UserID
+      Number(request.SenderID) === Number(userId)
         ? request.ReceiverID
         : request.SenderID;
 
     try {
       await addReview({
         SwapID: request.RequestID,
-        ReviewerID: currentUser.UserID,
+        ReviewerID: userId,
         RevieweeID: revieweeId,
         Rating: Number(rating),
         Comment: comment || "",
@@ -297,7 +367,7 @@ function App() {
 
       alert("Review submitted.");
 
-      loadDashboardData(currentUser.UserID);
+      loadDashboardData(userId);
     } catch (error) {
       alert("Could not submit review: " + error.message);
     }
@@ -468,6 +538,8 @@ function App() {
       </div>
     );
   }
+
+  const userId = getCurrentUserId();
 
   return (
     <div className="app">
@@ -643,7 +715,7 @@ function App() {
 
           <div className="skills-grid">
             {users
-              .filter((user) => user.UserID !== currentUser.UserID)
+              .filter((user) => Number(user.UserID) !== Number(userId))
               .map((user) => (
                 <div className="skill-box" key={user.UserID}>
                   <h3>
@@ -695,11 +767,13 @@ function App() {
                 </p>
 
                 <p>
-                  <strong>From:</strong> {request.SenderName || getUserName(request.SenderID)}
+                  <strong>From:</strong>{" "}
+                  {request.SenderName || getUserName(request.SenderID)}
                 </p>
 
                 <p>
-                  <strong>To:</strong> {request.ReceiverName || getUserName(request.ReceiverID)}
+                  <strong>To:</strong>{" "}
+                  {request.ReceiverName || getUserName(request.ReceiverID)}
                 </p>
 
                 <p>
@@ -712,7 +786,7 @@ function App() {
                   {request.OfferedSkillName || getSkillName(request.OfferedSkillID)}
                 </p>
 
-                {request.ReceiverID === currentUser.UserID &&
+                {Number(request.ReceiverID) === Number(userId) &&
                   request.Status === "Pending" && (
                     <div className="button-row">
                       <button
