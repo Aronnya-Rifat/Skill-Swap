@@ -11,13 +11,6 @@ async function request(endpoint, options = {}) {
     ...options,
   });
 
-  const contentType = res.headers.get("content-type");
-
-  if (!contentType || !contentType.includes("application/json")) {
-    const text = await res.text();
-    throw new Error(`Server returned non-JSON response: ${text}`);
-  }
-
   const data = await res.json();
 
   if (!res.ok) {
@@ -40,17 +33,17 @@ export async function registerUser(userData) {
   });
 }
 
+export async function loginUser(loginData) {
+  return request("/login", {
+    method: "POST",
+    body: JSON.stringify(loginData),
+  });
+}
+
 // ---------------- SKILLS ----------------
 
 export async function getSkills() {
   return request("/skills");
-}
-
-export async function addSkill(skillData) {
-  return request("/skills", {
-    method: "POST",
-    body: JSON.stringify(skillData),
-  });
 }
 
 // ---------------- USER OFFERS ----------------
