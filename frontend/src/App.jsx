@@ -12,6 +12,8 @@ import {
   createSwapRequest,
   getUserSwapRequests,
   updateSwapStatus,
+  addReview,
+  getUserReviews,
 } from "./api";
 
 function App() {
@@ -23,6 +25,7 @@ function App() {
   const [myOffers, setMyOffers] = useState([]);
   const [myWants, setMyWants] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
+  const [myReviews, setMyReviews] = useState([]);
 
   const [allUserOffers, setAllUserOffers] = useState({});
 
@@ -67,10 +70,12 @@ function App() {
       setSkills(skillsData);
 
       const offersMap = {};
+
       for (const user of usersData) {
         const offers = await getUserOffers(user.UserID);
         offersMap[user.UserID] = offers;
       }
+
       setAllUserOffers(offersMap);
     } catch (error) {
       alert(error.message);
@@ -82,13 +87,35 @@ function App() {
       const offers = await getUserOffers(userId);
       const wants = await getUserWants(userId);
       const requests = await getUserSwapRequests(userId);
+      const reviews = await getUserReviews(userId);
 
       setMyOffers(offers);
       setMyWants(wants);
       setMyRequests(requests);
+      setMyReviews(reviews);
     } catch (error) {
       alert(error.message);
     }
+  };
+
+  const getUserName = (userId) => {
+    const user = users.find((u) => u.UserID === userId);
+
+    if (!user) {
+      return `User #${userId}`;
+    }
+
+    return `${user.FirstName} ${user.LastName}`;
+  };
+
+  const getSkillName = (skillId) => {
+    const skill = skills.find((s) => s.SkillID === skillId);
+
+    if (!skill) {
+      return `Skill #${skillId}`;
+    }
+
+    return skill.SkillName;
   };
 
   const handleLogin = async (e) => {
@@ -96,8 +123,12 @@ function App() {
 
     try {
       const result = await loginUser(loginForm);
+
       setCurrentUser(result.user);
-      setLoginForm({ Email: "", PasswordHash: "" });
+      setLoginForm({
+        Email: "",
+        PasswordHash: "",
+      });
     } catch (error) {
       alert("Login failed: " + error.message);
     }
@@ -108,6 +139,7 @@ function App() {
 
     try {
       await registerUser(registerForm);
+
       alert("Registration successful. Please login now.");
 
       setRegisterForm({
@@ -127,7 +159,9 @@ function App() {
   const handleAddOffer = async (e) => {
     e.preventDefault();
 
-    if (!currentUser) return;
+    if (!currentUser) {
+      return;
+    }
 
     try {
       await addUserOffer(currentUser.UserID, {
@@ -136,7 +170,12 @@ function App() {
       });
 
       alert("Offered skill added.");
-      setOfferForm({ SkillID: "", ProficiencyLevel: "Beginner" });
+
+      setOfferForm({
+        SkillID: "",
+        ProficiencyLevel: "Beginner",
+      });
+
       loadDashboardData(currentUser.UserID);
       loadPublicData();
     } catch (error) {
@@ -147,7 +186,9 @@ function App() {
   const handleAddWant = async (e) => {
     e.preventDefault();
 
-    if (!currentUser) return;
+    if (!currentUser) {
+      return;
+    }
 
     try {
       await addUserWant(currentUser.UserID, {
@@ -155,7 +196,11 @@ function App() {
       });
 
       alert("Wanted skill added.");
-      setWantForm({ SkillID: "" });
+
+      setWantForm({
+        SkillID: "",
+      });
+
       loadDashboardData(currentUser.UserID);
     } catch (error) {
       alert("Could not add wanted skill: " + error.message);
@@ -163,6 +208,10 @@ function App() {
   };
 
   const handleSendSwap = async (receiverId, wantedSkillId) => {
+    if (!currentUser) {
+      return;
+    }
+
     if (myOffers.length === 0) {
       alert("You must add at least one offered skill before booking another user.");
       return;
@@ -178,6 +227,7 @@ function App() {
       });
 
       alert("Swap request sent.");
+
       loadDashboardData(currentUser.UserID);
     } catch (error) {
       alert("Could not send swap request: " + error.message);
@@ -187,10 +237,44 @@ function App() {
   const handleStatusUpdate = async (requestId, status) => {
     try {
       await updateSwapStatus(requestId, status);
-      alert(`Request marked as ${status}`);
+
+      alert(`Request marked as ${status}.`);
+
       loadDashboardData(currentUser.UserID);
     } catch (error) {
       alert("Could not update request: " + error.message);
+    }
+  };
+
+  const handleLeaveReview = async (request) => {
+    const rating = prompt("Enter rating from 1 to 5:");
+
+    if (!rating || Number(rating) < 1 || Number(rating) > 5) {
+      alert("Rating must be between 1 and 5.");
+      return;
+    }
+
+    const comment = prompt("Write a short review:");
+
+    const revieweeId =
+      request.SenderID === currentUser.UserID
+        ? request.ReceiverID
+        : request.SenderID;
+
+    try {
+      await addReview({
+        SwapID: request.RequestID,
+        ReviewerID: currentUser.UserID,
+        RevieweeID: revieweeId,
+        Rating: Number(rating),
+        Comment: comment || "",
+      });
+
+      alert("Review submitted.");
+
+      loadDashboardData(currentUser.UserID);
+    } catch (error) {
+      alert("Could not submit review: " + error.message);
     }
   };
 
@@ -199,6 +283,7 @@ function App() {
     setMyOffers([]);
     setMyWants([]);
     setMyRequests([]);
+    setMyReviews([]);
   };
 
   if (!currentUser) {
@@ -207,7 +292,9 @@ function App() {
         <header className="dashboard-header">
           <div>
             <h1>Skill Swap Platform</h1>
-            <p>Exchange skills, earn trade tokens, and learn from the community.</p>
+            <p>
+              Exchange skills, earn trade tokens, and learn from the community.
+            </p>
           </div>
 
           <div className="counter-box">
@@ -236,7 +323,10 @@ function App() {
                   placeholder="Email"
                   value={loginForm.Email}
                   onChange={(e) =>
-                    setLoginForm({ ...loginForm, Email: e.target.value })
+                    setLoginForm({
+                      ...loginForm,
+                      Email: e.target.value,
+                    })
                   }
                   required
                 />
@@ -337,12 +427,16 @@ function App() {
             </p>
 
             <div className="skills-grid">
-              {skills.map((skill) => (
-                <div className="skill-box" key={skill.SkillID}>
-                  <h3>{skill.SkillName}</h3>
-                  <span>{skill.Category}</span>
-                </div>
-              ))}
+              {skills.length === 0 ? (
+                <p className="empty-text">No skills available yet.</p>
+              ) : (
+                skills.map((skill) => (
+                  <div className="skill-box" key={skill.SkillID}>
+                    <h3>{skill.SkillName}</h3>
+                    <span>{skill.Category}</span>
+                  </div>
+                ))
+              )}
             </div>
           </section>
         </main>
@@ -386,7 +480,10 @@ function App() {
               <select
                 value={offerForm.SkillID}
                 onChange={(e) =>
-                  setOfferForm({ ...offerForm, SkillID: e.target.value })
+                  setOfferForm({
+                    ...offerForm,
+                    SkillID: e.target.value,
+                  })
                 }
                 required
               >
@@ -423,7 +520,10 @@ function App() {
               <select
                 value={wantForm.SkillID}
                 onChange={(e) =>
-                  setWantForm({ ...wantForm, SkillID: e.target.value })
+                  setWantForm({
+                    ...wantForm,
+                    SkillID: e.target.value,
+                  })
                 }
                 required
               >
@@ -480,12 +580,13 @@ function App() {
 
           <div className="skills-grid">
             {users
-              .filter((u) => u.UserID !== currentUser.UserID)
+              .filter((user) => user.UserID !== currentUser.UserID)
               .map((user) => (
                 <div className="skill-box" key={user.UserID}>
                   <h3>
                     {user.FirstName} {user.LastName}
                   </h3>
+
                   <p>{user.Bio}</p>
 
                   {(allUserOffers[user.UserID] || []).length === 0 ? (
@@ -515,6 +616,9 @@ function App() {
 
         <section className="card full-width-card">
           <h2>My Swap Requests</h2>
+          <p className="section-subtitle">
+            Incoming and outgoing swap requests connected to your account.
+          </p>
 
           {myRequests.length === 0 ? (
             <p className="empty-text">No swap requests yet.</p>
@@ -522,12 +626,27 @@ function App() {
             myRequests.map((request) => (
               <div className="item" key={request.RequestID}>
                 <h3>Swap Request #{request.RequestID}</h3>
+
                 <p>
                   <strong>Status:</strong> {request.Status}
                 </p>
+
                 <p>
-                  <strong>Sender:</strong> {request.SenderID} |{" "}
-                  <strong>Receiver:</strong> {request.ReceiverID}
+                  <strong>From:</strong> {getUserName(request.SenderID)}
+                </p>
+
+                <p>
+                  <strong>To:</strong> {getUserName(request.ReceiverID)}
+                </p>
+
+                <p>
+                  <strong>Wanted Skill:</strong>{" "}
+                  {getSkillName(request.WantedSkillID)}
+                </p>
+
+                <p>
+                  <strong>Offered Skill:</strong>{" "}
+                  {getSkillName(request.OfferedSkillID)}
                 </p>
 
                 {request.ReceiverID === currentUser.UserID &&
@@ -551,6 +670,52 @@ function App() {
                       </button>
                     </div>
                   )}
+
+                {request.Status === "Accepted" && (
+                  <div className="button-row">
+                    <button
+                      onClick={() =>
+                        handleStatusUpdate(request.RequestID, "Completed")
+                      }
+                    >
+                      Mark as Completed
+                    </button>
+                  </div>
+                )}
+
+                {request.Status === "Completed" && (
+                  <div className="button-row">
+                    <button onClick={() => handleLeaveReview(request)}>
+                      Leave Review
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </section>
+
+        <section className="card full-width-card">
+          <h2>My Reviews</h2>
+          <p className="section-subtitle">
+            Reviews given by other users after completed swaps.
+          </p>
+
+          {myReviews.length === 0 ? (
+            <p className="empty-text">No reviews yet.</p>
+          ) : (
+            myReviews.map((review) => (
+              <div className="item" key={review.ReviewID}>
+                <h3>Rating: {review.Rating}/5</h3>
+                <p>{review.Comment}</p>
+
+                <p>
+                  <strong>Swap ID:</strong> {review.SwapID}
+                </p>
+
+                <p>
+                  <strong>Reviewer:</strong> {getUserName(review.ReviewerID)}
+                </p>
               </div>
             ))
           )}
