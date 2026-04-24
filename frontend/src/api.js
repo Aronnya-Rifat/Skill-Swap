@@ -46,6 +46,13 @@ export async function getSkills() {
   return request("/skills");
 }
 
+export async function addSkill(skillData) {
+  return request("/skills", {
+    method: "POST",
+    body: JSON.stringify(skillData),
+  });
+}
+
 // ---------------- USER OFFERS ----------------
 
 export async function getUserOffers(userId) {

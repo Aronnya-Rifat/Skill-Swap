@@ -5,6 +5,7 @@ import {
   registerUser,
   loginUser,
   getSkills,
+  addSkill,
   getUserOffers,
   getUserWants,
   addUserOffer,
@@ -40,6 +41,11 @@ function App() {
     Email: "",
     PasswordHash: "",
     Bio: "",
+  });
+
+  const [customSkillForm, setCustomSkillForm] = useState({
+    SkillName: "",
+    Category: "",
   });
 
   const [offerForm, setOfferForm] = useState({
@@ -153,6 +159,25 @@ function App() {
       loadPublicData();
     } catch (error) {
       alert("Registration failed: " + error.message);
+    }
+  };
+
+  const handleAddCustomSkill = async (e) => {
+    e.preventDefault();
+
+    try {
+      await addSkill(customSkillForm);
+
+      alert("New skill added to platform.");
+
+      setCustomSkillForm({
+        SkillName: "",
+        Category: "",
+      });
+
+      loadPublicData();
+    } catch (error) {
+      alert("Could not add new skill: " + error.message);
     }
   };
 
@@ -423,7 +448,7 @@ function App() {
           <section className="card full-width-card">
             <h2>Available Skills</h2>
             <p className="section-subtitle">
-              These are official skills available on the platform.
+              These are skills already available on the platform.
             </p>
 
             <div className="skills-grid">
@@ -472,6 +497,44 @@ function App() {
       </header>
 
       <main className="dashboard">
+        <section className="card full-width-card">
+          <h2>Add a New Skill to the Platform</h2>
+          <p className="section-subtitle">
+            If your skill is not in the list, create it first. Then you can add
+            it to your teaching portfolio or learning wishlist.
+          </p>
+
+          <form onSubmit={handleAddCustomSkill}>
+            <input
+              type="text"
+              placeholder="Skill Name, e.g. Guitar, Excel, Cooking"
+              value={customSkillForm.SkillName}
+              onChange={(e) =>
+                setCustomSkillForm({
+                  ...customSkillForm,
+                  SkillName: e.target.value,
+                })
+              }
+              required
+            />
+
+            <input
+              type="text"
+              placeholder="Category, e.g. Music, Business, Lifestyle"
+              value={customSkillForm.Category}
+              onChange={(e) =>
+                setCustomSkillForm({
+                  ...customSkillForm,
+                  Category: e.target.value,
+                })
+              }
+              required
+            />
+
+            <button type="submit">Create New Skill</button>
+          </form>
+        </section>
+
         <section className="container">
           <div className="card">
             <h2>Add Skill I Can Teach</h2>
@@ -632,21 +695,21 @@ function App() {
                 </p>
 
                 <p>
-                  <strong>From:</strong> {getUserName(request.SenderID)}
+                  <strong>From:</strong> {request.SenderName || getUserName(request.SenderID)}
                 </p>
 
                 <p>
-                  <strong>To:</strong> {getUserName(request.ReceiverID)}
+                  <strong>To:</strong> {request.ReceiverName || getUserName(request.ReceiverID)}
                 </p>
 
                 <p>
                   <strong>Wanted Skill:</strong>{" "}
-                  {getSkillName(request.WantedSkillID)}
+                  {request.WantedSkillName || getSkillName(request.WantedSkillID)}
                 </p>
 
                 <p>
                   <strong>Offered Skill:</strong>{" "}
-                  {getSkillName(request.OfferedSkillID)}
+                  {request.OfferedSkillName || getSkillName(request.OfferedSkillID)}
                 </p>
 
                 {request.ReceiverID === currentUser.UserID &&
@@ -714,7 +777,8 @@ function App() {
                 </p>
 
                 <p>
-                  <strong>Reviewer:</strong> {getUserName(review.ReviewerID)}
+                  <strong>Reviewer:</strong>{" "}
+                  {review.ReviewerName || getUserName(review.ReviewerID)}
                 </p>
               </div>
             ))
