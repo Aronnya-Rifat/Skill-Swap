@@ -308,7 +308,6 @@ function App() {
       });
 
       alert("Swap request sent.");
-
       loadDashboardData(userId);
     } catch (error) {
       alert("Could not send swap request: " + error.message);
@@ -327,7 +326,6 @@ function App() {
       await updateSwapStatus(requestId, status);
 
       alert(`Request marked as ${status}.`);
-
       loadDashboardData(userId);
     } catch (error) {
       alert("Could not update request: " + error.message);
@@ -366,7 +364,6 @@ function App() {
       });
 
       alert("Review submitted.");
-
       loadDashboardData(userId);
     } catch (error) {
       alert("Could not submit review: " + error.message);
@@ -570,186 +567,6 @@ function App() {
 
       <main className="dashboard">
         <section className="card full-width-card">
-          <h2>Add a New Skill to the Platform</h2>
-          <p className="section-subtitle">
-            If your skill is not in the list, create it first. Then you can add
-            it to your teaching portfolio or learning wishlist.
-          </p>
-
-          <form onSubmit={handleAddCustomSkill}>
-            <input
-              type="text"
-              placeholder="Skill Name, e.g. Guitar, Excel, Cooking"
-              value={customSkillForm.SkillName}
-              onChange={(e) =>
-                setCustomSkillForm({
-                  ...customSkillForm,
-                  SkillName: e.target.value,
-                })
-              }
-              required
-            />
-
-            <input
-              type="text"
-              placeholder="Category, e.g. Music, Business, Lifestyle"
-              value={customSkillForm.Category}
-              onChange={(e) =>
-                setCustomSkillForm({
-                  ...customSkillForm,
-                  Category: e.target.value,
-                })
-              }
-              required
-            />
-
-            <button type="submit">Create New Skill</button>
-          </form>
-        </section>
-
-        <section className="container">
-          <div className="card">
-            <h2>Add Skill I Can Teach</h2>
-
-            <form onSubmit={handleAddOffer}>
-              <select
-                value={offerForm.SkillID}
-                onChange={(e) =>
-                  setOfferForm({
-                    ...offerForm,
-                    SkillID: e.target.value,
-                  })
-                }
-                required
-              >
-                <option value="">Select Skill</option>
-                {skills.map((skill) => (
-                  <option key={skill.SkillID} value={skill.SkillID}>
-                    {skill.SkillName} ({skill.Category})
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={offerForm.ProficiencyLevel}
-                onChange={(e) =>
-                  setOfferForm({
-                    ...offerForm,
-                    ProficiencyLevel: e.target.value,
-                  })
-                }
-              >
-                <option>Beginner</option>
-                <option>Intermediate</option>
-                <option>Advanced</option>
-              </select>
-
-              <button type="submit">Add Offered Skill</button>
-            </form>
-          </div>
-
-          <div className="card">
-            <h2>Add Skill I Want to Learn</h2>
-
-            <form onSubmit={handleAddWant}>
-              <select
-                value={wantForm.SkillID}
-                onChange={(e) =>
-                  setWantForm({
-                    ...wantForm,
-                    SkillID: e.target.value,
-                  })
-                }
-                required
-              >
-                <option value="">Select Skill</option>
-                {skills.map((skill) => (
-                  <option key={skill.SkillID} value={skill.SkillID}>
-                    {skill.SkillName} ({skill.Category})
-                  </option>
-                ))}
-              </select>
-
-              <button type="submit">Add Wanted Skill</button>
-            </form>
-          </div>
-        </section>
-
-        <section className="container">
-          <div className="card">
-            <h2>My Teaching Portfolio</h2>
-
-            {myOffers.length === 0 ? (
-              <p className="empty-text">No offered skills yet.</p>
-            ) : (
-              myOffers.map((offer) => (
-                <div className="item" key={offer.SkillID}>
-                  <h3>{offer.SkillName}</h3>
-                  <span className="badge">{offer.ProficiencyLevel}</span>
-                </div>
-              ))
-            )}
-          </div>
-
-          <div className="card">
-            <h2>My Learning Wishlist</h2>
-
-            {myWants.length === 0 ? (
-              <p className="empty-text">No wanted skills yet.</p>
-            ) : (
-              myWants.map((want) => (
-                <div className="item" key={want.SkillID}>
-                  <h3>{want.SkillName}</h3>
-                  <span className="badge">{want.Category}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="card full-width-card">
-          <h2>Book a User to Learn a Skill</h2>
-          <p className="section-subtitle">
-            Browse users who offer skills and send them a swap request.
-          </p>
-
-          <div className="skills-grid">
-            {users
-              .filter((user) => Number(user.UserID) !== Number(userId))
-              .map((user) => (
-                <div className="skill-box" key={user.UserID}>
-                  <h3>
-                    {user.FirstName} {user.LastName}
-                  </h3>
-
-                  <p>{user.Bio}</p>
-
-                  {(allUserOffers[user.UserID] || []).length === 0 ? (
-                    <p className="empty-text">No skills offered yet.</p>
-                  ) : (
-                    (allUserOffers[user.UserID] || []).map((offer) => (
-                      <div key={offer.SkillID} className="mini-skill">
-                        <span>
-                          {offer.SkillName} - {offer.ProficiencyLevel}
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleSendSwap(user.UserID, offer.SkillID)
-                          }
-                        >
-                          Book
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              ))}
-          </div>
-        </section>
-
-        <section className="card full-width-card">
           <h2>My Swap Requests</h2>
           <p className="section-subtitle">
             Incoming and outgoing swap requests connected to your account.
@@ -830,6 +647,191 @@ function App() {
               </div>
             ))
           )}
+        </section>
+
+        <section className="skills-action-row">
+          <div className="card action-card">
+            <h2>Create New Skill</h2>
+            <p className="section-subtitle">
+              If your skill is not listed, add it here first.
+            </p>
+
+            <form onSubmit={handleAddCustomSkill}>
+              <input
+                type="text"
+                placeholder="Skill Name"
+                value={customSkillForm.SkillName}
+                onChange={(e) =>
+                  setCustomSkillForm({
+                    ...customSkillForm,
+                    SkillName: e.target.value,
+                  })
+                }
+                required
+              />
+
+              <input
+                type="text"
+                placeholder="Category"
+                value={customSkillForm.Category}
+                onChange={(e) =>
+                  setCustomSkillForm({
+                    ...customSkillForm,
+                    Category: e.target.value,
+                  })
+                }
+                required
+              />
+
+              <button type="submit">Create Skill</button>
+            </form>
+          </div>
+
+          <div className="card action-card">
+            <h2>Skill I Can Teach</h2>
+            <p className="section-subtitle">
+              Add skills to your teaching portfolio.
+            </p>
+
+            <form onSubmit={handleAddOffer}>
+              <select
+                value={offerForm.SkillID}
+                onChange={(e) =>
+                  setOfferForm({
+                    ...offerForm,
+                    SkillID: e.target.value,
+                  })
+                }
+                required
+              >
+                <option value="">Select Skill</option>
+                {skills.map((skill) => (
+                  <option key={skill.SkillID} value={skill.SkillID}>
+                    {skill.SkillName} ({skill.Category})
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={offerForm.ProficiencyLevel}
+                onChange={(e) =>
+                  setOfferForm({
+                    ...offerForm,
+                    ProficiencyLevel: e.target.value,
+                  })
+                }
+              >
+                <option>Beginner</option>
+                <option>Intermediate</option>
+                <option>Advanced</option>
+              </select>
+
+              <button type="submit">Add Teaching Skill</button>
+            </form>
+          </div>
+
+          <div className="card action-card">
+            <h2>Skill I Want to Learn</h2>
+            <p className="section-subtitle">
+              Add skills to your learning wishlist.
+            </p>
+
+            <form onSubmit={handleAddWant}>
+              <select
+                value={wantForm.SkillID}
+                onChange={(e) =>
+                  setWantForm({
+                    ...wantForm,
+                    SkillID: e.target.value,
+                  })
+                }
+                required
+              >
+                <option value="">Select Skill</option>
+                {skills.map((skill) => (
+                  <option key={skill.SkillID} value={skill.SkillID}>
+                    {skill.SkillName} ({skill.Category})
+                  </option>
+                ))}
+              </select>
+
+              <button type="submit">Add Learning Skill</button>
+            </form>
+          </div>
+        </section>
+
+        <section className="container">
+          <div className="card">
+            <h2>My Teaching Portfolio</h2>
+
+            {myOffers.length === 0 ? (
+              <p className="empty-text">No offered skills yet.</p>
+            ) : (
+              myOffers.map((offer) => (
+                <div className="item" key={offer.SkillID}>
+                  <h3>{offer.SkillName}</h3>
+                  <span className="badge">{offer.ProficiencyLevel}</span>
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="card">
+            <h2>My Learning Wishlist</h2>
+
+            {myWants.length === 0 ? (
+              <p className="empty-text">No wanted skills yet.</p>
+            ) : (
+              myWants.map((want) => (
+                <div className="item" key={want.SkillID}>
+                  <h3>{want.SkillName}</h3>
+                  <span className="badge">{want.Category}</span>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="card full-width-card">
+          <h2>Book a User to Learn a Skill</h2>
+          <p className="section-subtitle">
+            Browse users who offer skills and send them a swap request.
+          </p>
+
+          <div className="skills-grid">
+            {users
+              .filter((user) => Number(user.UserID) !== Number(userId))
+              .map((user) => (
+                <div className="skill-box" key={user.UserID}>
+                  <h3>
+                    {user.FirstName} {user.LastName}
+                  </h3>
+
+                  <p>{user.Bio}</p>
+
+                  {(allUserOffers[user.UserID] || []).length === 0 ? (
+                    <p className="empty-text">No skills offered yet.</p>
+                  ) : (
+                    (allUserOffers[user.UserID] || []).map((offer) => (
+                      <div key={offer.SkillID} className="mini-skill">
+                        <span>
+                          {offer.SkillName} - {offer.ProficiencyLevel}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleSendSwap(user.UserID, offer.SkillID)
+                          }
+                        >
+                          Book
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              ))}
+          </div>
         </section>
 
         <section className="card full-width-card">
