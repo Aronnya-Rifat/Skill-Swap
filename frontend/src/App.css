@@ -1,3 +1,132 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #0f0f0f;
+  color: #f8fafc;
+}
+
+.app {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(245, 158, 11, 0.28), transparent 35%),
+    radial-gradient(circle at bottom right, rgba(250, 204, 21, 0.15), transparent 30%),
+    linear-gradient(135deg, #050505, #111111 55%, #241700);
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 28px;
+  padding: 38px 55px;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 38px;
+  color: #facc15;
+  letter-spacing: 0.5px;
+}
+
+.dashboard-header p {
+  margin: 8px 0 0;
+  color: #d1d5db;
+  max-width: 620px;
+  line-height: 1.5;
+}
+
+/* Counter Box */
+.counter-box {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #111111, #2a2108);
+  border: 1px solid rgba(250, 204, 21, 0.45);
+  border-radius: 18px;
+  padding: 18px 28px;
+  box-shadow: 0 0 25px rgba(250, 204, 21, 0.18);
+  min-width: 330px;
+}
+
+.counter-item {
+  flex: 1;
+  text-align: center;
+}
+
+.counter-item span {
+  display: block;
+  font-size: 14px;
+  color: #d1d5db;
+  margin-bottom: 6px;
+}
+
+.counter-item strong {
+  display: block;
+  font-size: 34px;
+  color: #facc15;
+}
+
+.counter-divider {
+  width: 1px;
+  height: 50px;
+  background: rgba(250, 204, 21, 0.35);
+  margin: 0 22px;
+}
+
+/* Layout */
+.dashboard {
+  padding: 35px 55px;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+  margin-bottom: 26px;
+}
+
+.card {
+  background: rgba(18, 18, 18, 0.94);
+  border: 1px solid rgba(250, 204, 21, 0.22);
+  padding: 26px;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 18px;
+  color: #facc15;
+  font-size: 23px;
+}
+
+.full-width-card {
+  width: 100%;
+  margin-bottom: 26px;
+}
+
+.section-subtitle {
+  margin-top: -8px;
+  margin-bottom: 20px;
+  color: #9ca3af;
+}
+
+/* Forms */
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+input,
+textarea,
 select {
   width: 100%;
   padding: 14px;
@@ -9,20 +138,51 @@ select {
   background: #090909;
 }
 
+input::placeholder,
+textarea::placeholder {
+  color: #8b8b8b;
+}
+
+input:focus,
+textarea:focus,
 select:focus {
   border-color: #facc15;
   box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.12);
 }
 
+textarea {
+  min-height: 85px;
+  resize: vertical;
+}
+
+select option {
+  background: #111111;
+  color: #f8fafc;
+}
+
+/* Buttons */
+button {
+  margin-top: 5px;
+  padding: 14px;
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+  color: #111111;
+  border: none;
+  border-radius: 11px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
 .logout-btn {
   width: auto;
   padding: 12px 22px;
-}
-
-.button-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 12px;
+  white-space: nowrap;
 }
 
 .danger-btn {
@@ -30,6 +190,93 @@ select:focus {
   color: white;
 }
 
+.button-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.button-row button {
+  width: auto;
+}
+
+/* Items */
+.item {
+  padding: 16px;
+  border-radius: 13px;
+  background: #090909;
+  border: 1px solid rgba(250, 204, 21, 0.18);
+  margin-bottom: 12px;
+}
+
+.item h3 {
+  margin: 0 0 8px;
+  color: #ffffff;
+}
+
+.item p {
+  margin: 6px 0;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.item strong {
+  color: #facc15;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background: rgba(250, 204, 21, 0.14);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.35);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.empty-text {
+  color: #9ca3af;
+}
+
+/* Skills Grid */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.skill-box {
+  background: linear-gradient(135deg, #0b0b0b, #2a2108);
+  border: 1px solid rgba(250, 204, 21, 0.25);
+  border-radius: 16px;
+  padding: 18px;
+  transition: 0.2s ease;
+}
+
+.skill-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 20px rgba(250, 204, 21, 0.18);
+}
+
+.skill-box h3 {
+  margin: 0 0 8px;
+  color: white;
+}
+
+.skill-box p {
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+
+.skill-box span {
+  color: #facc15;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* Booking Skill Mini Card */
 .mini-skill {
   display: flex;
   justify-content: space-between;
@@ -45,10 +292,65 @@ select:focus {
 .mini-skill span {
   color: #facc15;
   font-weight: 700;
+  font-size: 14px;
 }
 
 .mini-skill button {
   width: auto;
   margin: 0;
   padding: 9px 14px;
+  font-size: 13px;
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 28px;
+  }
+
+  .counter-box {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .dashboard {
+    padding: 28px;
+  }
+
+  .container {
+    grid-template-columns: 1fr;
+  }
+
+  .logout-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-header h1 {
+    font-size: 30px;
+  }
+
+  .counter-box {
+    padding: 16px;
+  }
+
+  .counter-item strong {
+    font-size: 28px;
+  }
+
+  .skills-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mini-skill {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .mini-skill button {
+    width: 100%;
+  }
 }
