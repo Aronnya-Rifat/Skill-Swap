@@ -17,25 +17,33 @@ def home():
 def register():
     data = request.json
 
-    first_name = data.get("FirstName")
-    last_name = data.get("LastName")
-    email = data.get("Email")
-    password_hash = data.get("PasswordHash")
-    bio = data.get("Bio", "")
-    trade_tokens = data.get("TradeTokens", 0)
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        query = """
-        INSERT INTO USERS (FirstName, LastName, Email, PasswordHash, Bio, TradeTokens)
-        VALUES (%s, %s, %s, %s, %s, %s)
-        """
-        cursor.execute(query, (first_name, last_name, email, password_hash, bio, trade_tokens))
+        cursor.execute(
+            """
+            INSERT INTO users (firstname, lastname, email, passwordhash, bio, tradetokens)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING userid
+            """,
+            (
+                data.get("FirstName"),
+                data.get("LastName"),
+                data.get("Email"),
+                data.get("PasswordHash"),
+                data.get("Bio", ""),
+                data.get("TradeTokens", 0),
+            ),
+        )
+
+        user = cursor.fetchone()
         conn.commit()
 
-        return jsonify({"message": "User registered successfully"}), 201
+        return jsonify({
+            "message": "User registered successfully",
+            "UserID": user["userid"]
+        }), 201
 
     except Exception as e:
         conn.rollback()
@@ -50,36 +58,50 @@ def register():
 def login():
     data = request.json
 
-    email = data.get("Email")
-    password_hash = data.get("PasswordHash")
-
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    query = """
-    SELECT UserID, FirstName, LastName, Email, Bio, TradeTokens
-    FROM USERS
-    WHERE Email = %s AND PasswordHash = %s
-    """
+    try:
+        cursor.execute(
+            """
+            SELECT userid, firstname, lastname, email, bio, tradetokens
+            FROM users
+            WHERE email = %s AND passwordhash = %s
+            """,
+            (data.get("Email"), data.get("PasswordHash")),
+        )
 
-    cursor.execute(query, (email, password_hash))
-    user = cursor.fetchone()
+        user = cursor.fetchone()
 
-    cursor.close()
-    conn.close()
+        if user:
+            return jsonify({"message": "Login successful", "user": user}), 200
 
-    if user:
-        return jsonify({"message": "Login successful", "user": user}), 200
-    else:
         return jsonify({"message": "Invalid email or password"}), 401
+
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @app.route("/users", methods=["GET"])
 def get_users():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    cursor.execute("SELECT UserID, FirstName, LastName, Email, Bio, TradeTokens FROM USERS")
+    cursor.execute(
+        """
+        SELECT 
+            userid AS "UserID",
+            firstname AS "FirstName",
+            lastname AS "LastName",
+            email AS "Email",
+            bio AS "Bio",
+            tradetokens AS "TradeTokens"
+        FROM users
+        ORDER BY userid DESC
+        """
+    )
+
     users = cursor.fetchall()
 
     cursor.close()
@@ -93,9 +115,19 @@ def get_users():
 @app.route("/skills", methods=["GET"])
 def get_skills():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM SKILLS")
+    cursor.execute(
+        """
+        SELECT 
+            skillid AS "SkillID",
+            skillname AS "SkillName",
+            category AS "Category"
+        FROM skills
+        ORDER BY skillid DESC
+        """
+    )
+
     skills = cursor.fetchall()
 
     cursor.close()
@@ -108,21 +140,26 @@ def get_skills():
 def add_skill():
     data = request.json
 
-    skill_name = data.get("SkillName")
-    category = data.get("Category")
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        query = """
-        INSERT INTO SKILLS (SkillName, Category)
-        VALUES (%s, %s)
-        """
-        cursor.execute(query, (skill_name, category))
+        cursor.execute(
+            """
+            INSERT INTO skills (skillname, category)
+            VALUES (%s, %s)
+            RETURNING skillid
+            """,
+            (data.get("SkillName"), data.get("Category")),
+        )
+
+        skill = cursor.fetchone()
         conn.commit()
 
-        return jsonify({"message": "Skill added successfully"}), 201
+        return jsonify({
+            "message": "Skill added successfully",
+            "SkillID": skill["skillid"]
+        }), 201
 
     except Exception as e:
         conn.rollback()
@@ -138,16 +175,23 @@ def add_skill():
 @app.route("/users/<int:user_id>/offers", methods=["GET"])
 def get_user_offers(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    query = """
-    SELECT uo.UserID, uo.SkillID, s.SkillName, s.Category, uo.ProficiencyLevel
-    FROM USER_OFFERS uo
-    JOIN SKILLS s ON uo.SkillID = s.SkillID
-    WHERE uo.UserID = %s
-    """
+    cursor.execute(
+        """
+        SELECT 
+            uo.userid AS "UserID",
+            uo.skillid AS "SkillID",
+            s.skillname AS "SkillName",
+            s.category AS "Category",
+            uo.proficiencylevel AS "ProficiencyLevel"
+        FROM user_offers uo
+        JOIN skills s ON uo.skillid = s.skillid
+        WHERE uo.userid = %s
+        """,
+        (user_id,),
+    )
 
-    cursor.execute(query, (user_id,))
     offers = cursor.fetchall()
 
     cursor.close()
@@ -160,20 +204,19 @@ def get_user_offers(user_id):
 def add_user_offer(user_id):
     data = request.json
 
-    skill_id = data.get("SkillID")
-    proficiency_level = data.get("ProficiencyLevel")
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        query = """
-        INSERT INTO USER_OFFERS (UserID, SkillID, ProficiencyLevel)
-        VALUES (%s, %s, %s)
-        """
-        cursor.execute(query, (user_id, skill_id, proficiency_level))
-        conn.commit()
+        cursor.execute(
+            """
+            INSERT INTO user_offers (userid, skillid, proficiencylevel)
+            VALUES (%s, %s, %s)
+            """,
+            (user_id, data.get("SkillID"), data.get("ProficiencyLevel")),
+        )
 
+        conn.commit()
         return jsonify({"message": "Offered skill added successfully"}), 201
 
     except Exception as e:
@@ -190,16 +233,22 @@ def add_user_offer(user_id):
 @app.route("/users/<int:user_id>/wants", methods=["GET"])
 def get_user_wants(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    query = """
-    SELECT uw.UserID, uw.SkillID, s.SkillName, s.Category
-    FROM USER_WANTS uw
-    JOIN SKILLS s ON uw.SkillID = s.SkillID
-    WHERE uw.UserID = %s
-    """
+    cursor.execute(
+        """
+        SELECT 
+            uw.userid AS "UserID",
+            uw.skillid AS "SkillID",
+            s.skillname AS "SkillName",
+            s.category AS "Category"
+        FROM user_wants uw
+        JOIN skills s ON uw.skillid = s.skillid
+        WHERE uw.userid = %s
+        """,
+        (user_id,),
+    )
 
-    cursor.execute(query, (user_id,))
     wants = cursor.fetchall()
 
     cursor.close()
@@ -212,19 +261,19 @@ def get_user_wants(user_id):
 def add_user_want(user_id):
     data = request.json
 
-    skill_id = data.get("SkillID")
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        query = """
-        INSERT INTO USER_WANTS (UserID, SkillID)
-        VALUES (%s, %s)
-        """
-        cursor.execute(query, (user_id, skill_id))
-        conn.commit()
+        cursor.execute(
+            """
+            INSERT INTO user_wants (userid, skillid)
+            VALUES (%s, %s)
+            """,
+            (user_id, data.get("SkillID")),
+        )
 
+        conn.commit()
         return jsonify({"message": "Wanted skill added successfully"}), 201
 
     except Exception as e:
@@ -242,25 +291,33 @@ def add_user_want(user_id):
 def create_swap_request():
     data = request.json
 
-    sender_id = data.get("SenderID")
-    receiver_id = data.get("ReceiverID")
-    wanted_skill_id = data.get("WantedSkillID")
-    offered_skill_id = data.get("OfferedSkillID")
-    status = data.get("Status", "Pending")
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        query = """
-        INSERT INTO SWAP_REQUESTS
-        (SenderID, ReceiverID, WantedSkillID, OfferedSkillID, Status)
-        VALUES (%s, %s, %s, %s, %s)
-        """
-        cursor.execute(query, (sender_id, receiver_id, wanted_skill_id, offered_skill_id, status))
+        cursor.execute(
+            """
+            INSERT INTO swap_requests
+            (senderid, receiverid, wantedskillid, offeredskillid, status)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING requestid
+            """,
+            (
+                data.get("SenderID"),
+                data.get("ReceiverID"),
+                data.get("WantedSkillID"),
+                data.get("OfferedSkillID"),
+                data.get("Status", "Pending"),
+            ),
+        )
+
+        swap = cursor.fetchone()
         conn.commit()
 
-        return jsonify({"message": "Swap request sent successfully"}), 201
+        return jsonify({
+            "message": "Swap request sent successfully",
+            "RequestID": swap["requestid"]
+        }), 201
 
     except Exception as e:
         conn.rollback()
@@ -274,15 +331,24 @@ def create_swap_request():
 @app.route("/swap-requests/user/<int:user_id>", methods=["GET"])
 def get_user_swap_requests(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    query = """
-    SELECT *
-    FROM SWAP_REQUESTS
-    WHERE SenderID = %s OR ReceiverID = %s
-    """
+    cursor.execute(
+        """
+        SELECT 
+            requestid AS "RequestID",
+            senderid AS "SenderID",
+            receiverid AS "ReceiverID",
+            wantedskillid AS "WantedSkillID",
+            offeredskillid AS "OfferedSkillID",
+            status AS "Status"
+        FROM swap_requests
+        WHERE senderid = %s OR receiverid = %s
+        ORDER BY requestid DESC
+        """,
+        (user_id, user_id),
+    )
 
-    cursor.execute(query, (user_id, user_id))
     requests = cursor.fetchall()
 
     cursor.close()
@@ -295,20 +361,20 @@ def get_user_swap_requests(user_id):
 def update_swap_status(request_id):
     data = request.json
 
-    status = data.get("Status")
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        query = """
-        UPDATE SWAP_REQUESTS
-        SET Status = %s
-        WHERE RequestID = %s
-        """
-        cursor.execute(query, (status, request_id))
-        conn.commit()
+        cursor.execute(
+            """
+            UPDATE swap_requests
+            SET status = %s
+            WHERE requestid = %s
+            """,
+            (data.get("Status"), request_id),
+        )
 
+        conn.commit()
         return jsonify({"message": "Swap request status updated successfully"}), 200
 
     except Exception as e:
@@ -326,24 +392,32 @@ def update_swap_status(request_id):
 def add_review():
     data = request.json
 
-    swap_id = data.get("SwapID")
-    reviewer_id = data.get("ReviewerID")
-    reviewee_id = data.get("RevieweeID")
-    rating = data.get("Rating")
-    comment = data.get("Comment", "")
-
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        query = """
-        INSERT INTO REVIEWS (SwapID, ReviewerID, RevieweeID, Rating, Comment)
-        VALUES (%s, %s, %s, %s, %s)
-        """
-        cursor.execute(query, (swap_id, reviewer_id, reviewee_id, rating, comment))
+        cursor.execute(
+            """
+            INSERT INTO reviews (swapid, reviewerid, revieweeid, rating, comment)
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING reviewid
+            """,
+            (
+                data.get("SwapID"),
+                data.get("ReviewerID"),
+                data.get("RevieweeID"),
+                data.get("Rating"),
+                data.get("Comment", ""),
+            ),
+        )
+
+        review = cursor.fetchone()
         conn.commit()
 
-        return jsonify({"message": "Review added successfully"}), 201
+        return jsonify({
+            "message": "Review added successfully",
+            "ReviewID": review["reviewid"]
+        }), 201
 
     except Exception as e:
         conn.rollback()
@@ -357,15 +431,24 @@ def add_review():
 @app.route("/reviews/user/<int:user_id>", methods=["GET"])
 def get_user_reviews(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor()
 
-    query = """
-    SELECT *
-    FROM REVIEWS
-    WHERE RevieweeID = %s
-    """
+    cursor.execute(
+        """
+        SELECT 
+            reviewid AS "ReviewID",
+            swapid AS "SwapID",
+            reviewerid AS "ReviewerID",
+            revieweeid AS "RevieweeID",
+            rating AS "Rating",
+            comment AS "Comment"
+        FROM reviews
+        WHERE revieweeid = %s
+        ORDER BY reviewid DESC
+        """,
+        (user_id,),
+    )
 
-    cursor.execute(query, (user_id,))
     reviews = cursor.fetchall()
 
     cursor.close()

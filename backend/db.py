@@ -1,12 +1,14 @@
-import mysql.connector
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 
 def get_db_connection():
-    connection = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="",          # put your MariaDB password here
-        database="skill_swap" # change this if your DB name is different
+    return psycopg2.connect(
+        host=os.environ.get("DB_HOST"),
+        port=os.environ.get("DB_PORT"),
+        user=os.environ.get("DB_USER"),
+        password=os.environ.get("DB_PASSWORD"),
+        dbname=os.environ.get("DB_NAME"),
+        cursor_factory=RealDictCursor
     )
-
-    return connection
