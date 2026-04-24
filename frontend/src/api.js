@@ -1,4 +1,6 @@
-const API_URL = "http://127.0.0.1:5000";
+const API_URL = "https://skill-swap-htcd.onrender.com"; // 🔥 CHANGE if your URL is different
+
+// ---------------- USERS ----------------
 
 export async function getUsers() {
   const res = await fetch(`${API_URL}/users`);
@@ -16,6 +18,8 @@ export async function registerUser(userData) {
 
   return res.json();
 }
+
+// ---------------- SKILLS ----------------
 
 export async function getSkills() {
   const res = await fetch(`${API_URL}/skills`);
