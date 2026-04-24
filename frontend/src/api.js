@@ -40,6 +40,24 @@ export async function loginUser(loginData) {
   });
 }
 
+export async function getUser(userId) {
+  return request(`/users/${userId}`);
+}
+
+export async function updateProfile(userId, profileData) {
+  return request(`/users/${userId}/profile`, {
+    method: "PUT",
+    body: JSON.stringify(profileData),
+  });
+}
+
+export async function updateTokens(userId, amount) {
+  return request(`/users/${userId}/tokens`, {
+    method: "PUT",
+    body: JSON.stringify({ Amount: amount }),
+  });
+}
+
 // ---------------- SKILLS ----------------
 
 export async function getSkills() {
@@ -66,6 +84,12 @@ export async function addUserOffer(userId, offerData) {
   });
 }
 
+export async function deleteUserOffer(userId, skillId) {
+  return request(`/users/${userId}/offers/${skillId}`, {
+    method: "DELETE",
+  });
+}
+
 // ---------------- USER WANTS ----------------
 
 export async function getUserWants(userId) {
@@ -77,6 +101,22 @@ export async function addUserWant(userId, wantData) {
     method: "POST",
     body: JSON.stringify(wantData),
   });
+}
+
+export async function deleteUserWant(userId, skillId) {
+  return request(`/users/${userId}/wants/${skillId}`, {
+    method: "DELETE",
+  });
+}
+
+// ---------------- PORTFOLIO + MATCHING ----------------
+
+export async function getUserPortfolio(userId) {
+  return request(`/users/${userId}/portfolio`);
+}
+
+export async function getMatches(userId) {
+  return request(`/users/${userId}/matches`);
 }
 
 // ---------------- SWAP REQUESTS ----------------
@@ -110,4 +150,18 @@ export async function addReview(reviewData) {
 
 export async function getUserReviews(userId) {
   return request(`/reviews/user/${userId}`);
+}
+
+export async function getUserReputation(userId) {
+  return request(`/users/${userId}/reputation`);
+}
+
+// ---------------- ANALYTICS ----------------
+
+export async function getMostWantedSkills() {
+  return request("/analytics/most-wanted");
+}
+
+export async function getMostOfferedSkills() {
+  return request("/analytics/most-offered");
 }
