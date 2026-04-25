@@ -33,7 +33,7 @@ def register():
                 data.get("Email"),
                 data.get("PasswordHash"),
                 data.get("Bio", ""),
-                data.get("TradeTokens", 0),
+                data.get("TradeTokens", 10),
             ),
         )
 
