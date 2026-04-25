@@ -383,7 +383,7 @@ function App() {
       <div className="app">
         <header className="dashboard-header">
           <div>
-            <h1>Skill Swap Platform</h1>
+            <h1>SkillSync</h1>
             <p>
               Exchange skills, earn trade tokens, and learn from the community.
             </p>
