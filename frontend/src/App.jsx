@@ -15,6 +15,7 @@ import {
   updateSwapStatus,
   addReview,
   getUserReviews,
+  getUserCalendar,
 } from "./api";
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
   const [myWants, setMyWants] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
   const [myReviews, setMyReviews] = useState([]);
+  const [myCalendar, setMyCalendar] = useState([]);
 
   const [allUserOffers, setAllUserOffers] = useState({});
 
@@ -133,11 +135,13 @@ function App() {
       const wants = await getUserWants(userId);
       const requests = await getUserSwapRequests(userId);
       const reviews = await getUserReviews(userId);
+      const calendar = await getUserCalendar(userId);
 
       setMyOffers(offers);
       setMyWants(wants);
       setMyRequests(requests);
       setMyReviews(reviews);
+      setMyCalendar(calendar);
     } catch (error) {
       alert(error.message);
     }
@@ -285,7 +289,7 @@ function App() {
     }
   };
 
-  const handleSendSwap = async (receiverId, wantedSkillId) => {
+  const handleSendSwap = async (receiverId, wantedSkillId, proposedDate) => {
     const userId = getCurrentUserId();
 
     if (!userId) {
@@ -305,6 +309,7 @@ function App() {
         WantedSkillID: wantedSkillId,
         OfferedSkillID: myOffers[0].SkillID,
         Status: "Pending",
+        ProposedDate: proposedDate,
       });
 
       alert("Swap request sent.");
@@ -376,6 +381,7 @@ function App() {
     setMyWants([]);
     setMyRequests([]);
     setMyReviews([]);
+    setMyCalendar([]);
   };
 
   if (!currentUser) {
@@ -603,29 +609,34 @@ function App() {
                   {request.OfferedSkillName || getSkillName(request.OfferedSkillID)}
                 </p>
 
+                <p>
+                  <strong>Proposed Date:</strong>{" "}
+                  {request.ProposedDate ? new Date(request.ProposedDate).toLocaleString() : "Not specified"}
+                </p>
+
                 {Number(request.ReceiverID) === Number(userId) &&
                   request.Status === "Pending" && (
                     <div className="button-row">
                       <button
                         onClick={() =>
-                          handleStatusUpdate(request.RequestID, "Accepted")
+                          handleStatusUpdate(request.RequestID, "Scheduled")
                         }
                       >
-                        Accept
+                        Accept Date
                       </button>
 
                       <button
                         className="danger-btn"
                         onClick={() =>
-                          handleStatusUpdate(request.RequestID, "Rejected")
+                          handleStatusUpdate(request.RequestID, "Time Mismatch")
                         }
                       >
-                        Reject
+                        Time Mismatch
                       </button>
                     </div>
                   )}
 
-                {request.Status === "Accepted" && (
+                {(request.Status === "Accepted" || request.Status === "Scheduled") && (
                   <div className="button-row">
                     <button
                       onClick={() =>
@@ -644,6 +655,39 @@ function App() {
                     </button>
                   </div>
                 )}
+              </div>
+            ))
+          )}
+        </section>
+
+        <section className="card full-width-card">
+          <h2>My Calendar</h2>
+          <p className="section-subtitle">
+            Your accepted and scheduled upcoming sessions.
+          </p>
+
+          {myCalendar.length === 0 ? (
+            <p className="empty-text">No upcoming sessions booked.</p>
+          ) : (
+            myCalendar.map((session) => (
+              <div className="item" key={session.RequestID}>
+                <h3>{new Date(session.SessionDate).toLocaleString()}</h3>
+                
+                <p>
+                  <strong>Role:</strong>{" "}
+                  {Number(session.SenderID) === Number(userId) ? "Teaching" : "Learning"}
+                </p>
+
+                <p>
+                  <strong>Partner:</strong>{" "}
+                  {Number(session.SenderID) === Number(userId)
+                    ? getUserName(session.ReceiverID)
+                    : getUserName(session.SenderID)}
+                </p>
+                
+                <p>
+                  <strong>Status:</strong> {session.Status}
+                </p>
               </div>
             ))
           )}
@@ -818,14 +862,26 @@ function App() {
                           {offer.SkillName} - {offer.ProficiencyLevel}
                         </span>
 
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleSendSwap(user.UserID, offer.SkillID)
-                          }
-                        >
-                          Book
-                        </button>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                          <input 
+                            type="datetime-local" 
+                            id={`date-${user.UserID}-${offer.SkillID}`} 
+                            style={{ padding: "8px", fontSize: "13px", width: "auto" }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const dateInput = document.getElementById(`date-${user.UserID}-${offer.SkillID}`).value;
+                              if (!dateInput) {
+                                alert("Please select a date and time!");
+                                return;
+                              }
+                              handleSendSwap(user.UserID, offer.SkillID, dateInput);
+                            }}
+                          >
+                            Book
+                          </button>
+                        </div>
                       </div>
                     ))
                   )}
