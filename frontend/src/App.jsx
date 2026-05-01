@@ -862,18 +862,19 @@ function App() {
                         className="mini-skill"
                         style={{ flexDirection: "column", alignItems: "flex-start" }}
                       >
-                        <span style={{ marginBottom: "4px" }}>
+                        <span style={{ marginBottom: "8px" }}>
                           {offer.SkillName} - {offer.ProficiencyLevel}
                         </span>
 
-                        <div style={{ display: "flex", gap: "8px", alignItems: "center", width: "100%" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
                           <input 
                             type="datetime-local" 
                             id={`date-${user.UserID}-${offer.SkillID}`} 
-                            style={{ padding: "8px", fontSize: "13px", flex: "1" }} 
+                            style={{ padding: "8px", fontSize: "13px", width: "100%" }} 
                           />
                           <button
                             type="button"
+                            style={{ width: "100%" }}
                             onClick={() => {
                               const dateInput = document.getElementById(`date-${user.UserID}-${offer.SkillID}`).value;
                               if (!dateInput) {
