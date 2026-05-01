@@ -165,3 +165,9 @@ export async function getMostWantedSkills() {
 export async function getMostOfferedSkills() {
   return request("/analytics/most-offered");
 }
+
+// ---------------- CALENDAR ----------------
+
+export async function getUserCalendar(userId) {
+  return request(`/users/${userId}/calendar`);
+}
