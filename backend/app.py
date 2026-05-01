@@ -287,6 +287,8 @@ def add_user_want(user_id):
 
 # ---------------- SWAP REQUESTS ----------------
 
+# ---------------- SWAP REQUESTS ----------------
+
 @app.route("/swap-requests", methods=["POST"])
 def create_swap_request():
     data = request.json
@@ -298,8 +300,8 @@ def create_swap_request():
         cursor.execute(
             """
             INSERT INTO swap_requests
-            (senderid, receiverid, wantedskillid, offeredskillid, status)
-            VALUES (%s, %s, %s, %s, %s)
+            (senderid, receiverid, wantedskillid, offeredskillid, status, proposed_date)
+            VALUES (%s, %s, %s, %s, %s, %s)
             RETURNING requestid
             """,
             (
@@ -308,6 +310,7 @@ def create_swap_request():
                 data.get("WantedSkillID"),
                 data.get("OfferedSkillID"),
                 data.get("Status", "Pending"),
+                data.get("ProposedDate") # Captures the requested calendar date
             ),
         )
 
@@ -315,7 +318,7 @@ def create_swap_request():
         conn.commit()
 
         return jsonify({
-            "message": "Swap request sent successfully",
+            "message": "Swap request sent successfully with proposed date",
             "RequestID": swap["requestid"]
         }), 201
 
@@ -341,7 +344,8 @@ def get_user_swap_requests(user_id):
             receiverid AS "ReceiverID",
             wantedskillid AS "WantedSkillID",
             offeredskillid AS "OfferedSkillID",
-            status AS "Status"
+            status AS "Status",
+            proposed_date AS "ProposedDate" -- Included so the frontend can display the requested date
         FROM swap_requests
         WHERE senderid = %s OR receiverid = %s
         ORDER BY requestid DESC
@@ -368,14 +372,20 @@ def update_swap_status(request_id):
         cursor.execute(
             """
             UPDATE swap_requests
-            SET status = %s
+            SET 
+                status = COALESCE(%s, status),
+                proposed_date = COALESCE(%s, proposed_date) -- Allows updating the date for a counter-offer
             WHERE requestid = %s
             """,
-            (data.get("Status"), request_id),
+            (
+                data.get("Status"), 
+                data.get("ProposedDate"), 
+                request_id
+            ),
         )
 
         conn.commit()
-        return jsonify({"message": "Swap request status updated successfully"}), 200
+        return jsonify({"message": "Swap request updated successfully"}), 200
 
     except Exception as e:
         conn.rollback()
@@ -384,6 +394,40 @@ def update_swap_status(request_id):
     finally:
         cursor.close()
         conn.close()
+
+
+@app.route("/users/<int:user_id>/calendar", methods=["GET"])
+def get_user_calendar(user_id):
+    """
+    Fetches all Scheduled swaps for a specific user to display on their calendar.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT 
+            sr.requestid AS "RequestID",
+            sr.senderid AS "SenderID",
+            sr.receiverid AS "ReceiverID",
+            sr.wantedskillid AS "WantedSkillID",
+            sr.offeredskillid AS "OfferedSkillID",
+            sr.proposed_date AS "SessionDate",
+            sr.status AS "Status"
+        FROM swap_requests sr
+        WHERE (sr.senderid = %s OR sr.receiverid = %s)
+          AND sr.status = 'Scheduled'
+        ORDER BY sr.proposed_date ASC
+        """,
+        (user_id, user_id),
+    )
+
+    calendar_events = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify(calendar_events)
 
 
 # ---------------- REVIEWS ----------------
