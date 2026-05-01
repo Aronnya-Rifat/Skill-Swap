@@ -839,59 +839,96 @@ function App() {
         <section className="card full-width-card">
           <h2>Book a User to Learn a Skill</h2>
           <p className="section-subtitle">
-            Browse users who offer skills and send them a swap request.
+            Browse users who offer skills matching your learning wishlist.
           </p>
 
           <div className="skills-grid">
-            {users
-              .filter((user) => Number(user.UserID) !== Number(userId))
-              .map((user) => (
-                <div className="skill-box" key={user.UserID}>
-                  <h3>
-                    {user.FirstName} {user.LastName}
-                  </h3>
+            {(() => {
+              // Extract just the IDs of the skills you want to learn
+              const wantedSkillIds = myWants.map((w) => Number(w.SkillID));
 
-                  <p>{user.Bio}</p>
+              return [...users]
+                // 1. Remove the logged-in user from the list
+                .filter((user) => Number(user.UserID) !== Number(userId))
+                
+                // 2. Sort users: those with matching skills go to the top
+                .sort((a, b) => {
+                  const aOffers = allUserOffers[a.UserID] || [];
+                  const bOffers = allUserOffers[b.UserID] || [];
+                  
+                  const aMatchCount = aOffers.filter(o => wantedSkillIds.includes(Number(o.SkillID))).length;
+                  const bMatchCount = bOffers.filter(o => wantedSkillIds.includes(Number(o.SkillID))).length;
+                  
+                  return bMatchCount - aMatchCount; // Highest matches first
+                })
+                
+                // 3. Limit to exactly 10 users max
+                .slice(0, 10)
+                
+                // 4. Render the cards
+                .map((user) => {
+                  let displayOffers = [...(allUserOffers[user.UserID] || [])];
 
-                  {(allUserOffers[user.UserID] || []).length === 0 ? (
-                    <p className="empty-text">No skills offered yet.</p>
-                  ) : (
-                    (allUserOffers[user.UserID] || []).map((offer) => (
-                      <div 
-                        key={offer.SkillID} 
-                        className="mini-skill"
-                        style={{ flexDirection: "column", alignItems: "flex-start" }}
-                      >
-                        <span style={{ marginBottom: "8px" }}>
-                          {offer.SkillName} - {offer.ProficiencyLevel}
-                        </span>
+                  // Sort the skills inside the user's card so matching ones sit at the top
+                  if (wantedSkillIds.length > 0) {
+                    displayOffers.sort((a, b) => {
+                      const aMatch = wantedSkillIds.includes(Number(a.SkillID)) ? 1 : 0;
+                      const bMatch = wantedSkillIds.includes(Number(b.SkillID)) ? 1 : 0;
+                      return bMatch - aMatch;
+                    });
+                  }
 
-                        <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
-                          <input 
-                            type="datetime-local" 
-                            id={`date-${user.UserID}-${offer.SkillID}`} 
-                            style={{ padding: "8px", fontSize: "13px", width: "100%" }} 
-                          />
-                          <button
-                            type="button"
-                            style={{ width: "100%" }}
-                            onClick={() => {
-                              const dateInput = document.getElementById(`date-${user.UserID}-${offer.SkillID}`).value;
-                              if (!dateInput) {
-                                alert("Please select a date and time!");
-                                return;
-                              }
-                              handleSendSwap(user.UserID, offer.SkillID, dateInput);
-                            }}
+                  return (
+                    <div className="skill-box" key={user.UserID}>
+                      <h3>
+                        {user.FirstName} {user.LastName}
+                      </h3>
+
+                      <p>{user.Bio}</p>
+
+                      {displayOffers.length === 0 ? (
+                        <p className="empty-text">No skills offered yet.</p>
+                      ) : (
+                        displayOffers.map((offer) => (
+                          <div 
+                            key={offer.SkillID} 
+                            className="mini-skill"
+                            style={{ flexDirection: "column", alignItems: "flex-start" }}
                           >
-                            Book
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              ))}
+                            <span style={{ marginBottom: "8px" }}>
+                              {offer.SkillName} - {offer.ProficiencyLevel}
+                              {/* Optional visual cue: add a star if it matches your wishlist! */}
+                              {wantedSkillIds.includes(Number(offer.SkillID)) && " ⭐"} 
+                            </span>
+
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+                              <input 
+                                type="datetime-local" 
+                                id={`date-${user.UserID}-${offer.SkillID}`} 
+                                style={{ padding: "8px", fontSize: "13px", width: "100%" }} 
+                              />
+                              <button
+                                type="button"
+                                style={{ width: "100%" }}
+                                onClick={() => {
+                                  const dateInput = document.getElementById(`date-${user.UserID}-${offer.SkillID}`).value;
+                                  if (!dateInput) {
+                                    alert("Please select a date and time!");
+                                    return;
+                                  }
+                                  handleSendSwap(user.UserID, offer.SkillID, dateInput);
+                                }}
+                              >
+                                Book
+                              </button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  );
+                });
+            })()}
           </div>
         </section>
 
