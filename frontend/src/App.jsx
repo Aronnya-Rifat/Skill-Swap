@@ -857,16 +857,20 @@ function App() {
                     <p className="empty-text">No skills offered yet.</p>
                   ) : (
                     (allUserOffers[user.UserID] || []).map((offer) => (
-                      <div key={offer.SkillID} className="mini-skill">
-                        <span>
+                      <div 
+                        key={offer.SkillID} 
+                        className="mini-skill"
+                        style={{ flexDirection: "column", alignItems: "flex-start" }}
+                      >
+                        <span style={{ marginBottom: "4px" }}>
                           {offer.SkillName} - {offer.ProficiencyLevel}
                         </span>
 
-                        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                        <div style={{ display: "flex", gap: "8px", alignItems: "center", width: "100%" }}>
                           <input 
                             type="datetime-local" 
                             id={`date-${user.UserID}-${offer.SkillID}`} 
-                            style={{ padding: "8px", fontSize: "13px", width: "auto" }}
+                            style={{ padding: "8px", fontSize: "13px", flex: "1" }} 
                           />
                           <button
                             type="button"
